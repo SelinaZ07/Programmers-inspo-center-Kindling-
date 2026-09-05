@@ -94,7 +94,7 @@ function Home() {
       <Navbar/>
 
       <section className="home">
-        <img className="image-background" src="./src/assets/Tech_Vison_Board.jpg" alt="background image"/>
+        <img className="image-background" src="/Tech_Vison_Board.jpg" alt="background image"/>
         <div className="overlay"></div>
 
         <div className="Big-header">

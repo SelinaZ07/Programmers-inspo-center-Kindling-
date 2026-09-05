@@ -6,7 +6,7 @@ function Footer () {
             <div className = "footer-content">
                 <div className="footer-content">
                     <div className="footer-left">
-                        <img src="./src/assets/logo.png" alt="Kindling Logo" className= "footer-logo"/>
+                        <img src="/logo.png" alt="Kindling Logo" className= "footer-logo"/>
 
                         <span className="footer-title">Kindling</span>
                     </div>
