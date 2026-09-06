@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { Link } from "react-router-dom";
 
 function Home() {
   //this is for the short brief displayed on the ideas card
@@ -148,9 +149,9 @@ function Home() {
                   {createSummary(idea.details)}
                 </p>
 
-                <a href="/inspirations" className="project-view-button">
+                <Link to={`/inspirations`} className="project-view-button">
                   Explore Idea
-                </a>
+                </Link>
               </div>
             </article>
           ))}
