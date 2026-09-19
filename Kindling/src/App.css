@@ -1038,6 +1038,13 @@ a {
   transform: scale(1.05);
 }
 
+.profile-post .idea-save-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 5;
+}
+
 .profile-post-overlay {
   position: absolute;
   left: 0;
@@ -1703,4 +1710,153 @@ a {
 .idea-save-button.saved {
   color: #111;
   font-weight: 600;
+}
+
+/*The login pop up page design*/
+.auth-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.auth-modal {
+  width: min(440px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+
+  padding: 36px;
+
+  background: #ffffff;
+  border-radius: 18px;
+
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+.auth-modal-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.auth-modal-logo {
+  width: 55px;
+  height: 55px;
+  object-fit: contain;
+  margin-bottom: 12px;
+}
+
+.auth-modal-header h2 {
+  margin: 0 0 8px;
+}
+
+.auth-modal-header p {
+  margin: 0;
+  color: #666;
+}
+
+.oauth-button {
+  width: 100%;
+  padding: 13px 16px;
+
+  margin-bottom: 10px;
+
+  border: 1px solid #d8d8d8;
+  border-radius: 9px;
+
+  background: #ffffff;
+
+  font-size: 15px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  margin: 20px 0;
+
+  color: #888;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #ddd;
+}
+
+.auth-form-group {
+  margin-bottom: 16px;
+}
+
+.auth-form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.auth-form-group input {
+  width: 100%;
+  padding: 12px;
+
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+.auth-submit-button {
+  width: 100%;
+  padding: 13px;
+
+  border: none;
+  border-radius: 9px;
+
+  background: #111;
+  color: white;
+
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-switch {
+  text-align: center;
+  margin-top: 18px;
+}
+
+.auth-switch button {
+  border: none;
+  background: none;
+
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-error {
+  margin-bottom: 14px;
+  color: #c62828;
+}
+
+.auth-success {
+  margin-bottom: 14px;
+  color: #2e7d32;
+}
+
+.auth-loading-screen {
+  min-height: 100vh;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }

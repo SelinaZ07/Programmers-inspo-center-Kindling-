@@ -1,93 +1,75 @@
 import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { supabase } from "../lib/supabaseClient";
 
-// This is temporary data, will come from badatabase later
-const defaultIdeas = [
-  {
-    id: 1,
-    title: "AI Study Planner",
-    category: "Daily Life Improvements",
-    details:
-      "Students enter their classes, assignments, exams, and available study time. The application creates a personalized study schedule and adjusts it as deadlines change.",
-    image:
-      "https://images.unsplash.com/photo-1434030216411-0b793f4b4173",
-    author: "Evelyn Sterling",
-    date: "2026-08-20",
-  },
-
-  {
-    id: 2,
-    title: "Community Food Sharing",
-    category: "Social Issues",
-    details:
-      "Restaurants, grocery stores, and individuals can post extra food that would otherwise be thrown away. Nearby users or community organizations can claim the food.",
-    image:
-      "https://images.unsplash.com/photo-1488459716781-31db52582fe9",
-    author: "Maya Wilson",
-    date: "2026-08-18",
-  },
-
-  {
-    id: 3,
-    title: "Campus Lost & Found",
-    category: "Community / Personal Issues",
-    details:
-      "Students can report lost and found items, upload pictures, and search for items based on categories and locations.",
-    image:
-      "https://images.unsplash.com/photo-1497366754035-f200968a6e72",
-    author: "Alex Chen",
-    date: "2026-08-15",
-  },
-
-  {
-    id: 4,
-    title: "Accessible Travel Planner",
-    category: "Social Issues",
-    details:
-      "Users can plan trips while filtering locations, transportation, restaurants, and attractions by accessibility features.",
-    image:
-      "https://images.unsplash.com/photo-1488646953014-85cb44e25828",
-    author: "Noah Smith",
-    date: "2026-08-12",
-  },
-
-  {
-    id: 5,
-    title:"Neighborhood Skill Exchange",
-    category: "Community / Personal Issues",
-    details:
-      "Users can offer skills such as tutoring, cooking, design, coding, or home repair in exchange for another skill.",
-    image:
-      "https://images.unsplash.com/photo-1529156069898-49953e39b3ac",
-    author: "Lena Brown",
-    date: "2026-08-10",
-  },
-
-  {
-    id: 6,
-    title: "Smart Transportation",
-    category:"Social Issues",
-    details:
-      "The app combines public transportation schedules, bike routes, walking routes, and ride-sharing information in one place.",
-    image:
-      "https://images.unsplash.com/photo-1519003722824-194d4455a60c",
-    author: "Jordan Lee",
-    date: "2026-08-05",
-  },
-];
 
 function Inspirations() {
-  //load in the ideas in the db (will come from supabase later)
-  const [ideas, setIdeas] = useState(() => {
-    try {
-      const storedIdeas = localStorage.getItem("kindlingIdeas");
-      return storedIdeas ? JSON.parse(storedIdeas) : defaultIdeas;
-    } catch (error) {
-      console.error("Error loading ideas:", error);
-      return defaultIdeas;
-    }
-  });
+  //load in the ideas in the db 
+  const [ideas, setIdeas] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadIdeas = async () => {
+      const { data, error } = await supabase
+        .from("inspirations")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error loading inspirations:", error);
+        setLoading(false);
+        return;
+      }
+
+      setIdeas(data);
+      setLoading(false);
+    };
+
+    loadIdeas();
+  }, []);
+
+  // Load saved ideas for the currently logged-in user
+  useEffect(() => {
+    const loadSavedIdeas = async () => {
+      // Get the currently logged-in user
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        console.error("Could not get logged-in user:", userError);
+        setSavedIdeasLoading(false);
+        return;
+      }
+
+      // Get this user's saved inspirations
+      const { data, error } = await supabase
+        .from("saved_inspirations")
+        .select(`
+          inspiration_id,
+          inspirations (*)
+        `)
+        .eq("user_id", user.id);
+
+      if (error) {
+        console.error("Error loading saved inspirations:", error);
+        setSavedIdeasLoading(false);
+        return;
+      }
+
+      // Convert the joined data into the same format
+      const ideas = data
+        .map((item) => item.inspirations)
+        .filter(Boolean);
+
+      setSavedIdeas(ideas);
+      setSavedIdeasLoading(false);
+    };
+
+    loadSavedIdeas();
+  }, []);
 
   const createSummary = (details) => {
     const words = details.trim().split(/\s+/);
@@ -104,16 +86,9 @@ function Inspirations() {
   const [categoryFilter, setCategoryFilter] = useState("");
   const [selectedIdea, setSelectedIdea] = useState(null);
 
-  //save idea state, these are stored in local browser for now
-  const [savedIdeas, setSavedIdeas] = useState(() => {
-    try {
-      const saved = localStorage.getItem("kindlingSavedIdeas");
-      return saved ? JSON.parse(saved) : [];
-    } catch (error) {
-      console.error("Error loading saved ideas from localStorage:", error);
-      return [];
-    }
-  });
+  // Saved ideas for the currently logged-in user
+  const [savedIdeas, setSavedIdeas] = useState([]);
+  const [savedIdeasLoading, setSavedIdeasLoading] = useState(true);
 
   //Add button states
   const [submitOpen, setSubmitOpen] = useState(false);
@@ -135,96 +110,161 @@ function Inspirations() {
   });
 
   //The save idea function
-  const toggleSaveIdea = () => {
+  const toggleSaveIdea = async () => {
     if (!selectedIdea) {
       return;
     }
 
-    setSavedIdeas((prevSavedIdeas) => {
-      const isAlreadySaved = prevSavedIdeas.some(
-        (idea) => idea.id === selectedIdea.id
-      );
+    // Get the currently logged-in user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
 
-      let updatedIdeas;
-      if (isAlreadySaved) {
-        //remove the idea from saved ideas
-        updatedIdeas = prevSavedIdeas.filter(
-          (idea) => idea.id !== selectedIdea.id
-        );
-      } else {
-        updatedIdeas = [...prevSavedIdeas, selectedIdea];
+    if (userError || !user) {
+      console.error("Could not get logged-in user:", userError);
+      return;
+    }
+
+    const isAlreadySaved = savedIdeas.some(
+      (idea) => idea.id === selectedIdea.id
+    );
+
+    if (isAlreadySaved) {
+      // Remove the saved idea from Supabase
+      const { error } = await supabase
+        .from("saved_inspirations")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("inspiration_id", selectedIdea.id);
+
+      if (error) {
+        console.error("Error removing saved inspiration:", error);
+        return;
       }
 
-      //save to browser storage (this might be temporary, have to rethink
-      localStorage.setItem("kindlingSavedIdeas", JSON.stringify(updatedIdeas));
-      return updatedIdeas;
-    });
-  };
+      // Update the UI
+      setSavedIdeas((previousIdeas) =>
+        previousIdeas.filter(
+          (idea) => idea.id !== selectedIdea.id
+        )
+      );
+    } else {
+      // Save the idea in Supabase
+      const { error } = await supabase
+        .from("saved_inspirations")
+        .insert({
+          user_id: user.id,
+          inspiration_id: selectedIdea.id,
+        });
 
-  const fileToDataURL = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
+      if (error) {
+        console.error("Error saving inspiration:", error);
+        return;
+      }
 
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = () => reject(reader.error);
-      reader.readAsDataURL(file);
-    });
+      // Update the UI
+      setSavedIdeas((previousIdeas) => [
+        ...previousIdeas,
+        selectedIdea,
+      ]);
+    }
   };
 
   const handleSubmitIdea = async (event) => {
     event.preventDefault();
 
-    if (!newIdeaTitle.trim() || 
-    !newIdeaDetails.trim() ||
-    !newIdeaCategory) 
-    {
+    //get the current logged in user data
+    const {
+      data: {user},
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user){
+      console.error("Could not get logged-in user:", userError);
       return;
     }
-    let imageURL = "https://images.unsplash.com/photo-1499750310107-5fef28a66643";
 
-    //convert uploaded image into persistent data url (this will be replaced with supabase storage later)
-    if (newIdeaImage) {
-      try {
-        imageURL = await fileToDataURL(newIdeaImage);
-      } catch (error) {
-        console.error("Error converting image to data URL:", error);
-      }
+    // Make sure required fields are filled in
+    if (
+      !newIdeaTitle.trim() ||
+      !newIdeaDetails.trim() ||
+      !newIdeaCategory
+    ) {
+      return;
     }
 
-    //new idea variable
-    const newIdea ={
-      id: Date.now(),
-      title: newIdeaTitle,
-      category: newIdeaCategory,
-      details: newIdeaDetails,
-      image: imageURL,
-      author: "Evelyn Sterling",
-      date: new Date().toISOString(),
-    };
+    try {
+      let imageURL =
+        "https://images.unsplash.com/photo-1499750310107-5fef28a66643";
 
-    setIdeas((previousIdeas) => {
-      const updatedIdeas = [ 
-      newIdea,
-      ...previousIdeas,
-      ];
+      // If the user uploaded an image, upload it to Supabase Storage
+      if (newIdeaImage) {
+        // Create a unique file name
+        const fileExtension = newIdeaImage.name.split(".").pop();
 
-      localStorage.setItem(
-        "kindlingIdeas",
-        JSON.stringify(updatedIdeas)
-      );
+        const fileName = `${Date.now()}-${Math.random()
+          .toString(36)
+          .substring(2)}.${fileExtension}`;
 
-      return updatedIdeas;
-    });
+        const filePath = `${user.id}/${fileName}`;
 
-  // Clear the form
-  setNewIdeaTitle("");
-  setNewIdeaCategory("");
-  setNewIdeaDetails("");
-  setNewIdeaImage(null);
+        // Upload the image
+        const { error: uploadError } = await supabase.storage
+          .from("inspiration-images")
+          .upload(filePath, newIdeaImage);
 
-  // Close the popup
-  setSubmitOpen(false);
-};
+        if (uploadError) {
+          console.error("Error uploading image:", uploadError);
+          return;
+        }
+
+        console.log("Image uploaded successffully!")
+
+        // Get the public URL
+        const { data: publicURLData } = supabase.storage
+          .from("inspiration-images")
+          .getPublicUrl(filePath);
+
+        imageURL = publicURLData.publicUrl;
+      }
+
+      // Insert the new inspiration into the database
+      const { data, error } = await supabase
+        .from("inspirations")
+        .insert([
+          {
+            title: newIdeaTitle.trim(),
+            category: newIdeaCategory,
+            details: newIdeaDetails.trim(),
+            image_url: imageURL,
+            author: user.email, //will change to username later
+            user_id: user.id,
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error creating inspiration:", error);
+        return;
+      }
+
+      // Add the newly created inspiration to the page
+      setIdeas((previousIdeas) => [data, ...previousIdeas]);
+
+      // Clear the form
+      setNewIdeaTitle("");
+      setNewIdeaCategory("");
+      setNewIdeaDetails("");
+      setNewIdeaImage(null);
+
+      // Close the popup
+      setSubmitOpen(false);
+    } catch (error) {
+      console.error("Unexpected error submitting inspiration:", error);
+    }
+  };
 
 
   return (
@@ -291,7 +331,12 @@ function Inspirations() {
         {/* The ideas display grid*/}
         <section className="inspiration-grid">
 
-          {filteredIdeas.length === 0 ? (
+          {/*Add in a loading state*/}
+          {loading ? (
+            <div className="no-ideas">
+              <h2>Loading ideas...</h2>
+            </div>
+          ) : filteredIdeas.length === 0 ? (
             <div className="no-ideas">
               <h2>No ideas found</h2>
               <p>Try changing your search or category filter.</p>
@@ -304,7 +349,7 @@ function Inspirations() {
                 onClick={() => setSelectedIdea(idea)}
               >
                 <div className="inspiration-image-wrapper">
-                  <img src={idea.image} alt={idea.title} className="inspiration-image" />
+                  <img src={idea.image_url} alt={idea.title} className="inspiration-image" />
                 </div>
 
                 <div className="inspiration-card-content">
@@ -342,7 +387,7 @@ function Inspirations() {
             </button>
 
             <img
-              src={selectedIdea.image}
+              src={selectedIdea.image_url}
               alt={selectedIdea.title}
               className="idea-modal-image"
             />
@@ -364,8 +409,9 @@ function Inspirations() {
                 onClick={toggleSaveIdea} aria-label="Save this idea">
                 {/*there's the toggle between the save and unsave icon*/}
                 <i className={savedIdeas.some((idea) => idea.id === selectedIdea.id)
-                  ? "fa-solid fa-bookmark"
-                  : "fa-regular fa-bookmark"}>
+                  ? "fa-solid fa-bookmark" //The save icon
+                  : "fa-regular fa-bookmark"//the unsave icon
+                  }>
                 </i>
                 <span>save</span>
               </button>
