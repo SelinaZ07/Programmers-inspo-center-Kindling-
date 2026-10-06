@@ -1,4 +1,4 @@
-# Welcome to Kindling
+# Welcome to Kindling (under development)
 This is a website/community that I built for hackers to find project ideas to build, either for fun or for hackathon. However, this website is still in its developing stage. Go try out the project here: https://kindling-tau.vercel.app/
 Please note: the website is still under development, so many features and security aspects are not finalized.
 
